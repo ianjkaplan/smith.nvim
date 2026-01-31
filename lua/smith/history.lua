@@ -80,12 +80,28 @@ function M.clear()
   M.items = {}
 end
 
+---Clear only completed jobs from history
+---@return number count Number of items cleared
+function M.clear_completed()
+  local count = 0
+  local new_items = {}
+  for _, entry in ipairs(M.items) do
+    if entry.status ~= "completed" then
+      table.insert(new_items, entry)
+    else
+      count = count + 1
+    end
+  end
+  M.items = new_items
+  return count
+end
+
 ---Show history list in UI
 ---@param ui table The UI module
 ---@param on_select fun(entry: SmithHistoryEntry, index: number) Callback when item is selected
 function M.show(ui, on_select)
   if M.is_empty() then
-    vim.notify("Smith: No history yet", vim.log.levels.INFO)
+    vim.notify("Smith: No Agents Smith yet", vim.log.levels.INFO)
     return
   end
 
@@ -104,7 +120,7 @@ function M.show(ui, on_select)
     })
   end
 
-  ui.select(items, "Agent Smiths:", function(choice)
+  ui.select(items, "Agents Smith:", function(choice)
     on_select(choice.entry, choice.index)
   end)
 end

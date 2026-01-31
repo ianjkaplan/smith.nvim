@@ -55,10 +55,16 @@ function M.get_stored_selection()
   return M._stored_selection or ""
 end
 
----Clear stored selection and cancel current operation
+---Clear stored selection and completed jobs from history
 function M.clear()
   M._stored_selection = nil
-  vim.notify("Smith: Cleared", vim.log.levels.INFO)
+  local history = require("smith.history")
+  local count = history.clear_completed()
+  if count > 0 then
+    vim.notify("Smith: Cleared " .. count .. " completed job(s)", vim.log.levels.INFO)
+  else
+    vim.notify("Smith: No completed jobs to clear", vim.log.levels.INFO)
+  end
 end
 
 ---Repeat last command

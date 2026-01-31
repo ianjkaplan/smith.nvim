@@ -60,6 +60,25 @@ end
 ---@type table<number, table> Active viewers for history entries (history_index -> viewer state)
 M._active_viewers = {}
 
+---Format the Query box header for a history entry
+---@param input string The query input text
+---@param status "running"|"completed"|"failed"|"cancelled" The job status
+---@return string[] lines The formatted header lines
+local function format_query_box(input, status)
+  local status_icon = status == "completed" and "✓"
+    or status == "failed" and "✗"
+    or status == "running" and "…"
+    or "⊘"
+
+  return {
+    "╭─ Query ──────────────────────────────────────╮",
+    "│ " .. input,
+    "│ Status: " .. status_icon .. " " .. status,
+    "╰──────────────────────────────────────────────╯",
+    "",
+  }
+end
+
 ---Main plugin functionality - opens command palette with text pre-filled
 ---@param input string
 function M.run(input)
@@ -114,21 +133,34 @@ function M._update_viewer(history_index)
     return
   end
 
-  -- Parse output and update display
-  for i = viewer.parsed_lines + 1, #entry.output do
-    viewer.stream_state = parser.parse_and_update(viewer.stream_state, entry.output[i])
-    viewer.parsed_lines = i
-  end
-
-  -- Update status line if completed
-  local lines = vim.deepcopy(viewer.stream_state.lines)
   if entry.status ~= "running" then
+    -- Job finished - rebuild entire buffer with updated status
     local status_icon = entry.status == "completed" and "✓" or "✗"
-    table.insert(lines, "")
-    table.insert(lines, "─── " .. status_icon .. " " .. entry.status .. " ───")
-  end
 
-  ui.update_streaming_float(viewer.streaming_win, lines, true)
+    -- Re-parse all output into fresh state with updated header
+    local fresh_state = parser.create_stream_state()
+    fresh_state.lines = format_query_box(entry.input, entry.status)
+    for _, line in ipairs(entry.output) do
+      fresh_state = parser.parse_and_update(fresh_state, line)
+    end
+
+    -- Add footer
+    table.insert(fresh_state.lines, "")
+    table.insert(fresh_state.lines, "─── " .. status_icon .. " " .. entry.status .. " ───")
+
+    ui.update_streaming_float(viewer.streaming_win, fresh_state.lines, true)
+
+    -- Remove from active viewers since streaming is done
+    M._active_viewers[history_index] = nil
+  else
+    -- Still running - incrementally parse new output
+    for i = viewer.parsed_lines + 1, #entry.output do
+      viewer.stream_state = parser.parse_and_update(viewer.stream_state, entry.output[i])
+      viewer.parsed_lines = i
+    end
+
+    ui.update_streaming_float(viewer.streaming_win, viewer.stream_state.lines, true)
+  end
 end
 
 ---Show history list
@@ -147,20 +179,7 @@ function M._open_history_viewer(entry, index)
 
   -- Create stream state and parse existing output
   local stream_state = parser.create_stream_state()
-
-  -- Add header
-  local status_icon = entry.status == "completed" and "✓"
-    or entry.status == "failed" and "✗"
-    or entry.status == "running" and "…"
-    or "⊘"
-
-  stream_state.lines = {
-    "╭─ Query ──────────────────────────────────────╮",
-    "│ " .. entry.input,
-    "│ Status: " .. status_icon .. " " .. entry.status,
-    "╰──────────────────────────────────────────────╯",
-    "",
-  }
+  stream_state.lines = format_query_box(entry.input, entry.status)
 
   -- Parse existing output
   for _, line in ipairs(entry.output) do
@@ -168,12 +187,16 @@ function M._open_history_viewer(entry, index)
   end
 
   -- Determine window title
-  local title = entry.status == "running" and " Smith (streaming...) " or " Smith (q: close, d: delete) "
+  local title = entry.status == "running" and " Smith (q: close, b: back) " or " Smith (q: close, d: delete, b: back) "
 
   -- Open streaming window
   local streaming_win = ui.open_streaming_float(title, index, function(idx)
     history.remove(idx)
     M._active_viewers[idx] = nil
+  end, function()
+    -- on_back - return to history list
+    M._active_viewers[index] = nil
+    M.show_history()
   end)
 
   if not streaming_win then
@@ -183,6 +206,7 @@ function M._open_history_viewer(entry, index)
   -- Build display lines
   local display_lines = vim.deepcopy(stream_state.lines)
   if entry.status ~= "running" then
+    local status_icon = entry.status == "completed" and "✓" or "✗"
     table.insert(display_lines, "")
     table.insert(display_lines, "─── " .. status_icon .. " " .. entry.status .. " ───")
   end

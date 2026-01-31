@@ -108,8 +108,9 @@ end
 ---@param title? string Window title
 ---@param history_index? number Index in history (for deletion)
 ---@param on_delete? fun(index: number) Callback when item is deleted
+---@param on_back? fun() Callback to go back to list view
 ---@return StreamingWindow|nil
-function M.open_streaming_float(title, history_index, on_delete)
+function M.open_streaming_float(title, history_index, on_delete, on_back)
   -- Create buffer
   local buf = vim.api.nvim_create_buf(false, true)
 
@@ -161,6 +162,14 @@ function M.open_streaming_float(title, history_index, on_delete)
       on_delete(history_index)
       vim.api.nvim_win_close(win, true)
       vim.notify("Smith: Deleted from history", vim.log.levels.INFO)
+    end
+  end, { buffer = buf, silent = true })
+
+  -- Back to list on b
+  vim.keymap.set("n", "b", function()
+    if on_back then
+      vim.api.nvim_win_close(win, true)
+      on_back()
     end
   end, { buffer = buf, silent = true })
 
