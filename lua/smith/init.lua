@@ -81,7 +81,8 @@ end
 
 ---Main plugin functionality - opens command palette with text pre-filled
 ---@param input string
-function M.run(input)
+---@param context? SmithContext
+function M.run(input, context)
   ui.input("Smith: ", input, function(value)
     -- Store for repeat functionality
     M._last_input = value
@@ -92,10 +93,14 @@ function M.run(input)
     -- Dispatch the agent job with the input
     agent.dispatch({
       text = value,
+      context = context,
       on_stdout = function(data)
         history.append_output(history_index, data)
         -- Update any active viewer for this entry
         M._update_viewer(history_index)
+
+        -- reload buffers with changes
+        vim.cmd("checktime")
       end,
       on_stderr = function(data)
         history.append_output(history_index, data)

@@ -1,30 +1,32 @@
 ---@class SmithKeymaps
 local M = {}
 
----Get the visual selection text
----@return string
-local function get_visual_selection()
-  local _, start_row, start_col, _ = unpack(vim.fn.getpos("'<"))
-  local _, end_row, end_col, _ = unpack(vim.fn.getpos("'>"))
+---Get the visual selection as SmithContext (requires Neovim 0.10+)
+---@return SmithContext|nil
+local function get_visual_selection_context()
+  local start_pos = vim.fn.getpos("v") -- start of visual selection
+  local end_pos = vim.fn.getpos(".") -- current cursor position
 
-  if start_row == 0 then
-    return ""
-  end
+  local lines = vim.fn.getregion(start_pos, end_pos, { type = vim.fn.mode() })
 
-  local lines = vim.api.nvim_buf_get_lines(0, start_row - 1, end_row, false)
   if #lines == 0 then
-    return ""
+    return nil
   end
 
-  -- Adjust for partial line selection
-  if #lines == 1 then
-    lines[1] = string.sub(lines[1], start_col, end_col)
-  else
-    lines[1] = string.sub(lines[1], start_col)
-    lines[#lines] = string.sub(lines[#lines], 1, end_col)
-  end
+  -- Normalize line numbers (selection could be upward or downward)
+  local start_line = math.min(start_pos[2], end_pos[2])
+  local end_line = math.max(start_pos[2], end_pos[2])
 
-  return table.concat(lines, "\n")
+  -- Exit visual mode
+  local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+  vim.api.nvim_feedkeys(esc, "x", false)
+
+  return {
+    content = table.concat(lines, "\n"),
+    location = vim.api.nvim_buf_get_name(0),
+    start = start_line,
+    finish = end_line,
+  }
 end
 
 ---Open command palette (normal mode)
@@ -36,8 +38,8 @@ end
 ---Open command palette with selected text as context
 function M.open_palette_with_selection()
   local smith = require("smith")
-  local selection = get_visual_selection()
-  smith.run(selection)
+  local context = get_visual_selection_context()
+  smith.run("", context)
 end
 
 ---Open command palette without auto-inserting selection
@@ -45,25 +47,25 @@ end
 function M.open_palette_selection_available()
   local smith = require("smith")
   -- Store selection for later use but don't auto-insert
-  M._stored_selection = get_visual_selection()
+  M._stored_context = get_visual_selection_context()
   smith.run("")
 end
 
----Get stored selection (for use when selection is available but not auto-inserted)
----@return string
-function M.get_stored_selection()
-  return M._stored_selection or ""
+---Get stored context (for use when selection is available but not auto-inserted)
+---@return SmithContext|nil
+function M.get_stored_context()
+  return M._stored_context
 end
 
----Clear stored selection and completed jobs from history
+---Clear stored context and completed jobs from history
 function M.clear()
-  M._stored_selection = nil
+  M._stored_context = nil
   local history = require("smith.history")
   local count = history.clear_completed()
   if count > 0 then
-    vim.notify("Smith: Cleared " .. count .. " completed job(s)", vim.log.levels.INFO)
+    vim.notify("Agents Smith: Cleared " .. count .. " completed agents(s)", vim.log.levels.INFO)
   else
-    vim.notify("Smith: No completed jobs to clear", vim.log.levels.INFO)
+    vim.notify("Agents Smith: No completed agents to clear", vim.log.levels.INFO)
   end
 end
 

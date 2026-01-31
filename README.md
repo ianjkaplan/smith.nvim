@@ -14,7 +14,7 @@ A Neovim plugin for managing multiple background AI agents from within Neovim. S
 
 ## Requirements
 
-- Neovim >= 0.8.0
+- Neovim >= 0.10.0
 
 ## Installation
 

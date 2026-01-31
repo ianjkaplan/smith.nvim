@@ -13,11 +13,18 @@ local M = {}
 ---@field on_stderr fun(data: string[])|nil
 ---@field on_exit fun(job: SmithJob)|nil
 
+---@class SmithContext
+---@field content string The selected text or code snippet to provide as context. This is the raw text content that will be included in the agent prompt, typically obtained from a visual selection or buffer range.
+---@field location string File path or buffer identifier where the context originated. Used to give the agent information about the file being edited (e.g., "lua/smith/agent.lua").
+---@field start number Starting line number of the selection (1-indexed). Corresponds to the first line of the selected content in the original buffer.
+---@field finish number Ending line number of the selection (1-indexed). Corresponds to the last line of the selected content in the original buffer.
+
 ---@type table<number, SmithJob>
 M.jobs = {}
 
 ---@class SmithJobOpts
 ---@field text string
+---@field context? SmithContext
 ---@field cwd? string
 ---@field env? table<string, string>
 ---@field on_stdout? fun(data: string[])
@@ -28,6 +35,19 @@ M.jobs = {}
 ---@param opts SmithJobOpts
 ---@return number|nil job_id
 function M.dispatch(opts)
+  -- Build the text with context if provided
+  local text = opts.text
+  if opts.context then
+    text = string.format(
+      "%s\n\nContext from %s (lines %d-%d):\n```\n%s\n```",
+      opts.text,
+      opts.context.location,
+      opts.context.start,
+      opts.context.finish,
+      opts.context.content
+    )
+  end
+
   ---@type SmithJob
   local job = {
     id = 0,
@@ -35,7 +55,7 @@ function M.dispatch(opts)
       "agent",
       "-p",
       "--output-format=stream-json",
-      opts.text,
+      text,
     },
     stdout = {},
     stderr = {},
