@@ -1,0 +1,21 @@
+# Lua
+*.luac
+luac.out
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+/tmp/
+*.orig
+
+# Dependencies (for local development)
+.deps/
