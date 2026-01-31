@@ -6,6 +6,7 @@ local ui = require("smith.ui")
 local agent = require("smith.agent")
 local history = require("smith.history")
 local parser = require("smith.parser")
+local indicators = require("smith.indicators")
 
 ---@type SmithConfig
 M.config = require("smith.config").defaults
@@ -109,6 +110,12 @@ function M.run(input, context)
       on_exit = function(job)
         history.set_status(history_index, job.status)
         M._update_viewer(history_index)
+
+        -- Update indicator to show completion status
+        if job.context then
+          indicators.done(job.id, job.status)
+        end
+
         if job.status == "completed" then
           vim.notify(string.format("Smith %d completed", job.index), vim.log.levels.INFO)
         else

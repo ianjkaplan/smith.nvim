@@ -2,6 +2,8 @@
 ---@field jobs table<number, SmithJob>
 local M = {}
 
+local indicators = require("smith.indicators")
+
 ---@class SmithJob
 ---@field id number
 ---@field index number
@@ -10,6 +12,7 @@ local M = {}
 ---@field stderr string[]
 ---@field status "running"|"completed"|"failed"|"cancelled"
 ---@field exit_code number|nil
+---@field context SmithContext|nil
 ---@field on_stdout fun(data: string[])|nil
 ---@field on_stderr fun(data: string[])|nil
 ---@field on_exit fun(job: SmithJob)|nil
@@ -58,11 +61,12 @@ function M.dispatch(opts)
       "--output-format=stream-json",
       text,
     },
-    index = vim.table_count(M.jobs) + 1,
+    index = vim.tbl_count(M.jobs) + 1,
     stdout = {},
     stderr = {},
     status = "running",
     exit_code = nil,
+    context = opts.context,
     on_stdout = opts.on_stdout,
     on_stderr = opts.on_stderr,
     on_exit = opts.on_exit,
@@ -127,6 +131,11 @@ function M.dispatch(opts)
   job.id = job_id
   M.jobs[job_id] = job
   vim.notify(string.format("Agent Smith %d working", job.index), vim.log.levels.INFO)
+
+  -- Show indicator if we have visual context
+  if opts.context then
+    indicators.show(job_id, job.index, opts.context)
+  end
 
   return job_id
 end
