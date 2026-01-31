@@ -1,11 +1,14 @@
 ---@class SmithIndicators
 local M = {}
 
+local timer_mod = require("smith.timer")
+
 ---@class SmithIndicator
 ---@field job_index number
 ---@field bufnr number
 ---@field extmark_id number
 ---@field line number
+---@field timer userdata|nil
 
 ---@type table<number, SmithIndicator> job_id -> indicator state
 M._indicators = {}
@@ -50,7 +53,25 @@ function M.show(job_id, job_index, context)
     bufnr = bufnr,
     extmark_id = extmark_id,
     line = line,
+    timer = nil,
   }
+
+  -- Start animation timer to cycle dots
+  M._indicators[job_id].timer = timer_mod.create_dot_animation(function(dot_count)
+    local indicator = M._indicators[job_id]
+    if not indicator or not vim.api.nvim_buf_is_valid(indicator.bufnr) then
+      return
+    end
+
+    local dots = string.rep(".", dot_count)
+    local text = "Smith #" .. indicator.job_index .. " working" .. dots
+
+    vim.api.nvim_buf_set_extmark(indicator.bufnr, M._namespace, indicator.line, 0, {
+      id = indicator.extmark_id,
+      virt_lines = { { { text, "Comment" } } },
+      virt_lines_above = true,
+    })
+  end)
 end
 
 ---Update indicator to show completion status, then remove after delay
@@ -61,6 +82,10 @@ function M.done(job_id, status)
   if not indicator then
     return
   end
+
+  -- Stop animation timer
+  timer_mod.stop(indicator.timer)
+  indicator.timer = nil
 
   -- Check if buffer is still valid
   if not vim.api.nvim_buf_is_valid(indicator.bufnr) then
@@ -99,6 +124,10 @@ function M.remove(job_id)
   if not indicator then
     return
   end
+
+  -- Stop animation timer
+  timer_mod.stop(indicator.timer)
+  indicator.timer = nil
 
   -- Check if buffer is still valid before removing extmark
   if vim.api.nvim_buf_is_valid(indicator.bufnr) then
