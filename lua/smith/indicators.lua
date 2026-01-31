@@ -25,20 +25,23 @@ function M.show(job_id, job_index, context)
     bufnr = vim.api.nvim_get_current_buf()
   end
 
-  -- Extmark line is 0-indexed, context.finish is 1-indexed
-  -- Place after the selection end line
-  local line = context.finish - 1
+  -- Extmark line is 0-indexed, context.start is 1-indexed
+  -- Place above the selection start line
+  local line = context.start - 1
 
   -- Clamp to valid line range
   local line_count = vim.api.nvim_buf_line_count(bufnr)
   if line >= line_count then
     line = line_count - 1
   end
+  if line < 0 then
+    line = 0
+  end
 
-  -- Create extmark with virtual line below
+  -- Create extmark with virtual line above
   local extmark_id = vim.api.nvim_buf_set_extmark(bufnr, M._namespace, line, 0, {
     virt_lines = { { { "Smith #" .. job_index .. " working...", "Comment" } } },
-    virt_lines_above = false,
+    virt_lines_above = true,
   })
 
   -- Store indicator state
@@ -52,7 +55,7 @@ end
 
 ---Update indicator to show completion status, then remove after delay
 ---@param job_id number
----@param status "completed"|"failed"|"cancelled"
+---@param status string
 function M.done(job_id, status)
   local indicator = M._indicators[job_id]
   if not indicator then
@@ -65,24 +68,22 @@ function M.done(job_id, status)
     return
   end
 
-  -- Determine completion text and highlight
-  local text, hl
-  if status == "completed" then
-    text = "Smith #" .. indicator.job_index .. " complete"
-    hl = "DiagnosticOk"
-  elseif status == "failed" then
-    text = "Smith #" .. indicator.job_index .. " failed"
-    hl = "DiagnosticError"
-  else
-    text = "Smith #" .. indicator.job_index .. " cancelled"
-    hl = "DiagnosticWarn"
-  end
+  -- Status display configuration
+  local status_config = {
+    completed = { suffix = "complete", hl = "DiagnosticOk" },
+    failed = { suffix = "failed", hl = "DiagnosticError" },
+    cancelled = { suffix = "cancelled", hl = "DiagnosticWarn" },
+  }
+
+  local config = status_config[status] or status_config.cancelled
+  local text = "Smith #" .. indicator.job_index .. " " .. config.suffix
+  local hl = config.hl
 
   -- Update extmark with completion status
   vim.api.nvim_buf_set_extmark(indicator.bufnr, M._namespace, indicator.line, 0, {
     id = indicator.extmark_id,
     virt_lines = { { { text, hl } } },
-    virt_lines_above = false,
+    virt_lines_above = true,
   })
 
   -- Remove after delay (2 seconds)

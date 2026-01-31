@@ -130,7 +130,7 @@ function M.dispatch(opts)
 
   job.id = job_id
   M.jobs[job_id] = job
-  vim.notify(string.format("Agent Smith %d working", job.index), vim.log.levels.INFO)
+  vim.notify(string.format("Smith #%d working", job.index), vim.log.levels.INFO)
 
   -- Show indicator if we have visual context
   if opts.context then
@@ -205,15 +205,6 @@ function M.send(job_id, data)
 
   vim.fn.chansend(job_id, data)
   return true
-end
-
----Wait for a job to complete (blocking)
----@param job_id number
----@param timeout? number Timeout in milliseconds
----@return boolean success
-function M.wait(job_id, timeout)
-  local result = vim.fn.jobwait({ job_id }, timeout or -1)
-  return result[1] ~= -1
 end
 
 return M

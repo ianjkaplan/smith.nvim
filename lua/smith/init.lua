@@ -117,10 +117,10 @@ function M.run(input, context)
         end
 
         if job.status == "completed" then
-          vim.notify(string.format("Smith %d completed", job.index), vim.log.levels.INFO)
+          vim.notify(string.format("Smith #%d completed", job.index), vim.log.levels.INFO)
         else
           vim.notify(
-            string.format("Smith %d failed with exit code ", job.index) .. (job.exit_code or "unknown"),
+            string.format("Smith #%d failed with exit code ", job.index) .. (job.exit_code or "unknown"),
             vim.log.levels.ERROR
           )
         end

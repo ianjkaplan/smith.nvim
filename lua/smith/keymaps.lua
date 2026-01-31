@@ -63,9 +63,9 @@ function M.clear()
   local history = require("smith.history")
   local count = history.clear_completed()
   if count > 0 then
-    vim.notify("Agents Smith: Cleared " .. count .. " completed agents(s)", vim.log.levels.INFO)
+    vim.notify("Cleared " .. count .. " completed agents(s)", vim.log.levels.INFO)
   else
-    vim.notify("Agents Smith: No completed agents to clear", vim.log.levels.INFO)
+    vim.notify("No completed agents to clear", vim.log.levels.INFO)
   end
 end
 
