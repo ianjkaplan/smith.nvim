@@ -1,0 +1,240 @@
+*smith.txt*  Manage multiple background AI agents from Neovim
+
+Author:  Ian Kaplan
+License: MIT
+
+==============================================================================
+CONTENTS                                                      *smith-contents*
+
+  1. Introduction ............................ |smith-introduction|
+  2. Requirements ............................ |smith-requirements|
+  3. Installation ............................ |smith-installation|
+  4. Configuration ........................... |smith-configuration|
+  5. Commands ................................ |smith-commands|
+  6. Keymaps ................................. |smith-keymaps|
+  7. API ..................................... |smith-api|
+  8. History ................................. |smith-history|
+
+==============================================================================
+1. INTRODUCTION                                           *smith-introduction*
+
+smith.nvim is a Neovim plugin for managing multiple background AI agents.
+Spawn, monitor, and interact with concurrent agent sessions without leaving
+your editor.
+
+Features:
+  - Spawn and manage multiple background agent instances
+  - Real-time streaming output with formatted display
+  - Visual selection context support for code-aware prompts
+  - History management with live updates for running agents
+  - Default keymaps for quick access
+  - Floating window UI for viewing agent output
+
+==============================================================================
+2. REQUIREMENTS                                           *smith-requirements*
+
+  - Neovim >= 0.8.0
+  - `agent` CLI tool available in PATH (with `--output-format=stream-json`)
+
+==============================================================================
+3. INSTALLATION                                           *smith-installation*
+
+Using lazy.nvim: >lua
+  {
+    "iankaplan/smith.nvim",
+    config = function()
+      require("smith").setup()
+    end,
+  }
+<
+Using packer.nvim: >lua
+  use {
+    "iankaplan/smith.nvim",
+    config = function()
+      require("smith").setup()
+    end,
+  }
+<
+==============================================================================
+4. CONFIGURATION                                         *smith-configuration*
+
+Call the setup function with your preferred options:
+>lua
+  require("smith").setup({
+    enabled = true,           -- Enable the plugin
+    autocmds = false,         -- Enable autocommands
+    debug = false,            -- Enable debug mode
+    keymaps = true,           -- Enable default keymaps
+    keymap_prefix = "<leader>m", -- Prefix for keymaps
+  })
+<
+                                                         *smith-config-enabled*
+enabled ~
+    Type: `boolean`, Default: `true`
+    Enable or disable the plugin.
+
+                                                        *smith-config-autocmds*
+autocmds ~
+    Type: `boolean`, Default: `false`
+    Enable autocommands (reserved for future use).
+
+                                                           *smith-config-debug*
+debug ~
+    Type: `boolean`, Default: `false`
+    Enable debug mode for troubleshooting.
+
+                                                         *smith-config-keymaps*
+keymaps ~
+    Type: `boolean`, Default: `true`
+    Enable default keymaps. Set to `false` to define your own.
+
+                                                   *smith-config-keymap-prefix*
+keymap_prefix ~
+    Type: `string`, Default: `"<leader>m"`
+    Prefix for all default keymaps.
+
+==============================================================================
+5. COMMANDS                                                   *smith-commands*
+
+:Smith [message]                                                      *:Smith*
+    Open the command palette. Optionally provide a message to pre-fill the
+    input prompt.
+
+    Examples: >vim
+      :Smith                        " Open empty prompt
+      :Smith fix the bug            " Open with pre-filled message
+<
+==============================================================================
+6. KEYMAPS                                                     *smith-keymaps*
+
+Default keymaps use the configured prefix (default: `<leader>m`).
+
+------------------------------------------------------------------------------
+6.1 COMMAND KEYMAPS                                    *smith-keymaps-command*
+
+                                                           *smith-keymap-open*
+<leader>mm (Normal mode)
+    Open the command palette.
+
+<leader>mm (Visual mode)
+    Open the command palette with the visual selection as context. The
+    selected text, file path, and line numbers are included in the prompt.
+
+                                                   *smith-keymap-open-stored*
+<leader>mM (Visual mode)
+    Open the command palette with the selection stored but not automatically
+    used. Access the stored context via |smith.keymaps.get_stored_context()|.
+
+                                                          *smith-keymap-clear*
+<leader>mc (Normal/Visual mode)
+    Clear all completed agents from history.
+
+                                                         *smith-keymap-repeat*
+<leader>mr (Normal mode)
+    Repeat the last command.
+
+                                                        *smith-keymap-history*
+<leader>ml (Normal mode)
+    Show the history list of all agent sessions.
+
+------------------------------------------------------------------------------
+6.2 FLOATING WINDOW KEYMAPS                           *smith-keymaps-floating*
+
+When viewing agent output or history in a floating window:
+
+q                                                         *smith-keymap-close*
+<Esc>
+    Close the floating window.
+
+d                                                        *smith-keymap-delete*
+    Delete the current entry from history (not available for running agents).
+
+b                                                          *smith-keymap-back*
+    Go back to the history list.
+
+==============================================================================
+7. API                                                             *smith-api*
+
+------------------------------------------------------------------------------
+                                                              *smith.setup()*
+smith.setup({opts})
+    Initialize the plugin with optional configuration.
+
+    Parameters: ~
+      {opts}  (table|nil)  Configuration options (see |smith-configuration|)
+
+    Example: >lua
+      require("smith").setup({
+        keymaps = true,
+        keymap_prefix = "<leader>a",
+      })
+<
+------------------------------------------------------------------------------
+                                                                *smith.run()*
+smith.run({input}, {context})
+    Open the command palette with optional pre-filled input and context.
+
+    Parameters: ~
+      {input}    (string)     Pre-filled text for the command palette
+      {context}  (table|nil)  Context from visual selection
+
+    Context table fields: ~
+      content   (string)  The selected text content
+      location  (string)  File path where the selection originated
+      start     (number)  Starting line number (1-indexed)
+      finish    (number)  Ending line number (1-indexed)
+
+    Example: >lua
+      -- Simple command
+      require("smith").run("explain this code")
+
+      -- With context
+      require("smith").run("refactor this", {
+        content = "local x = 1",
+        location = "lua/myfile.lua",
+        start = 10,
+        finish = 10,
+      })
+<
+------------------------------------------------------------------------------
+                                                       *smith.show_history()*
+smith.show_history()
+    Display the history list of all agent sessions. Select an entry to view
+    its output in a floating window.
+
+    Example: >lua
+      require("smith").show_history()
+<
+------------------------------------------------------------------------------
+                                                         *smith.get_config()*
+smith.get_config()
+    Returns the current configuration table.
+
+    Returns: ~
+      (table) Current configuration
+
+    Example: >lua
+      local config = require("smith").get_config()
+      print(config.keymap_prefix)  -- "<leader>m"
+<
+==============================================================================
+8. HISTORY                                                     *smith-history*
+
+Agent sessions are tracked in history with the following statuses:
+
+  running     Agent is actively working
+  completed   Agent finished successfully (exit code 0)
+  failed      Agent exited with an error (non-zero exit code)
+  cancelled   Agent was manually stopped
+
+History entries display with status icons:
+  ✓  completed
+  ✗  failed
+  …  running
+  ⊘  cancelled
+
+When viewing a running agent in the history viewer, the output updates in
+real-time as the agent streams its response.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
