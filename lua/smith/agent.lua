@@ -80,11 +80,7 @@ function M.dispatch(opts)
     on_exit = function(_, exit_code)
       job.exit_code = exit_code
       job.status = exit_code == 0 and "completed" or "failed"
-      vim.schedule(function()
-        if job.on_exit then
-          job.on_exit(job)
-        end
-      end)
+      job.on_exit(job)
     end,
     stdout_buffered = false,
     stderr_buffered = false,
@@ -102,10 +98,11 @@ function M.dispatch(opts)
   local job_id = vim.fn.jobstart(job.cmd, job_opts)
 
   if job_id <= 0 then
-    vim.notify("Smith Agent: Failed to start job", vim.log.levels.ERROR)
+    vim.notify("Agent Smith: Failed to start", vim.log.levels.ERROR)
     return nil
   end
 
+  vim.notify("Agent Smith working", vim.log.levels.INFO)
   job.id = job_id
   M.jobs[job_id] = job
 
