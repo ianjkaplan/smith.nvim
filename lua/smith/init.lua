@@ -5,6 +5,7 @@ local M = {}
 local ui = require("smith.ui")
 local agent = require("smith.agent")
 local history = require("smith.history")
+local parser = require("smith.parser")
 
 ---@type SmithConfig
 M.config = require("smith.config").defaults
@@ -56,6 +57,9 @@ function M._setup_autocmds()
   })
 end
 
+---@type table<number, table> Active viewers for history entries (history_index -> viewer state)
+M._active_viewers = {}
+
 ---Main plugin functionality - opens command palette with text pre-filled
 ---@param input string
 function M.run(input)
@@ -71,12 +75,16 @@ function M.run(input)
       text = value,
       on_stdout = function(data)
         history.append_output(history_index, data)
+        -- Update any active viewer for this entry
+        M._update_viewer(history_index)
       end,
       on_stderr = function(data)
         history.append_output(history_index, data)
+        M._update_viewer(history_index)
       end,
       on_exit = function(job)
         history.set_status(history_index, job.status)
+        M._update_viewer(history_index)
         if job.status == "completed" then
           vim.notify("Smith: Job completed", vim.log.levels.INFO)
         else
@@ -87,27 +95,109 @@ function M.run(input)
   end)
 end
 
+---Update an active viewer if one exists for this history entry
+---@param history_index number
+function M._update_viewer(history_index)
+  local viewer = M._active_viewers[history_index]
+  if not viewer then
+    return
+  end
+
+  -- Check if window is still valid
+  if not ui.is_streaming_valid(viewer.streaming_win) then
+    M._active_viewers[history_index] = nil
+    return
+  end
+
+  local entry = history.get(history_index)
+  if not entry then
+    return
+  end
+
+  -- Parse output and update display
+  for i = viewer.parsed_lines + 1, #entry.output do
+    viewer.stream_state = parser.parse_and_update(viewer.stream_state, entry.output[i])
+    viewer.parsed_lines = i
+  end
+
+  -- Update status line if completed
+  local lines = vim.deepcopy(viewer.stream_state.lines)
+  if entry.status ~= "running" then
+    local status_icon = entry.status == "completed" and "✓" or "✗"
+    table.insert(lines, "")
+    table.insert(lines, "─── " .. status_icon .. " " .. entry.status .. " ───")
+  end
+
+  ui.update_streaming_float(viewer.streaming_win, lines, true)
+end
+
 ---Show history list
 function M.show_history()
   history.show(ui, function(entry, index)
-    -- Build content: show input as header, then output
-    local lines = { "Input: " .. entry.input, "Status: " .. entry.status, string.rep("─", 40) }
-    if #entry.output > 0 then
-      vim.list_extend(lines, entry.output)
-    else
-      table.insert(lines, "(no output)")
-    end
-    M._open_float(table.concat(lines, "\n"), index)
+    M._open_history_viewer(entry, index)
   end)
 end
 
----Open a floating window with the given content
----@param content string
----@param history_index? number Index in history (for deletion)
-function M._open_float(content, history_index)
-  ui.open_float(content, history_index, function(index)
-    history.remove(index)
+---Open a history entry viewer with live streaming support
+---@param entry SmithHistoryEntry
+---@param index number
+function M._open_history_viewer(entry, index)
+  -- Reset parser for this entry
+  parser.reset()
+
+  -- Create stream state and parse existing output
+  local stream_state = parser.create_stream_state()
+
+  -- Add header
+  local status_icon = entry.status == "completed" and "✓"
+    or entry.status == "failed" and "✗"
+    or entry.status == "running" and "…"
+    or "⊘"
+
+  stream_state.lines = {
+    "╭─ Query ──────────────────────────────────────╮",
+    "│ " .. entry.input,
+    "│ Status: " .. status_icon .. " " .. entry.status,
+    "╰──────────────────────────────────────────────╯",
+    "",
+  }
+
+  -- Parse existing output
+  for _, line in ipairs(entry.output) do
+    stream_state = parser.parse_and_update(stream_state, line)
+  end
+
+  -- Determine window title
+  local title = entry.status == "running" and " Smith (streaming...) " or " Smith (q: close, d: delete) "
+
+  -- Open streaming window
+  local streaming_win = ui.open_streaming_float(title, index, function(idx)
+    history.remove(idx)
+    M._active_viewers[idx] = nil
   end)
+
+  if not streaming_win then
+    return
+  end
+
+  -- Build display lines
+  local display_lines = vim.deepcopy(stream_state.lines)
+  if entry.status ~= "running" then
+    table.insert(display_lines, "")
+    table.insert(display_lines, "─── " .. status_icon .. " " .. entry.status .. " ───")
+  end
+
+  -- Initial display
+  ui.update_streaming_float(streaming_win, display_lines, false)
+
+  -- If still running, register as active viewer for live updates
+  if entry.status == "running" then
+    M._active_viewers[index] = {
+      streaming_win = streaming_win,
+      stream_state = stream_state,
+      parsed_lines = #entry.output,
+    }
+  end
 end
 
 ---Get the current configuration

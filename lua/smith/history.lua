@@ -104,7 +104,7 @@ function M.show(ui, on_select)
     })
   end
 
-  ui.select(items, "Smith History:", function(choice)
+  ui.select(items, "Agent Smiths:", function(choice)
     on_select(choice.entry, choice.index)
   end)
 end

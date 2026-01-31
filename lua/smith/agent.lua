@@ -35,13 +35,7 @@ function M.dispatch(opts)
       "agent",
       "-p",
       "--output-format=stream-json",
-      string.format(
-        [[
-      you are a software engineer who writes focused readable code and good documentation.
-       explain the following instructions in detail. %s
-      ]],
-        opts.text
-      ),
+      opts.text,
     },
     stdout = {},
     stderr = {},
