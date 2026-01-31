@@ -4,6 +4,7 @@ local M = {}
 
 ---@class SmithJob
 ---@field id number
+---@field index number
 ---@field cmd string[]
 ---@field stdout string[]
 ---@field stderr string[]
@@ -57,6 +58,7 @@ function M.dispatch(opts)
       "--output-format=stream-json",
       text,
     },
+    index = vim.table_count(M.jobs) + 1,
     stdout = {},
     stderr = {},
     status = "running",
@@ -122,9 +124,9 @@ function M.dispatch(opts)
     return nil
   end
 
-  vim.notify("Agent Smith working", vim.log.levels.INFO)
   job.id = job_id
   M.jobs[job_id] = job
+  vim.notify(string.format("Agent Smith %d working", job.index), vim.log.levels.INFO)
 
   return job_id
 end

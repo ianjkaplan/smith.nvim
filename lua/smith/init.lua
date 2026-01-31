@@ -110,9 +110,12 @@ function M.run(input, context)
         history.set_status(history_index, job.status)
         M._update_viewer(history_index)
         if job.status == "completed" then
-          vim.notify("Agent Smith completed", vim.log.levels.INFO)
+          vim.notify(string.format("Smith %d completed", job.index), vim.log.levels.INFO)
         else
-          vim.notify("Agent Smith failed with exit code " .. (job.exit_code or "unknown"), vim.log.levels.ERROR)
+          vim.notify(
+            string.format("Smith %d failed with exit code ", job.index) .. (job.exit_code or "unknown"),
+            vim.log.levels.ERROR
+          )
         end
       end,
     })
