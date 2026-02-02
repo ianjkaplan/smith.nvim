@@ -16,17 +16,17 @@ M.config = require("smith.config").defaults
 function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
+  -- Skip setup if plugin is disabled
+  if not M.config.enabled then
+    return
+  end
+
   -- Set up user commands
   M._setup_commands()
 
   -- Set up keymaps if enabled
   if M.config.keymaps then
     M._setup_keymaps()
-  end
-
-  -- Set up autocommands if enabled
-  if M.config.autocmds then
-    M._setup_autocmds()
   end
 end
 
@@ -44,18 +44,6 @@ end
 function M._setup_keymaps()
   local keymaps = require("smith.keymaps")
   keymaps.setup({ prefix = M.config.keymap_prefix })
-end
-
----Set up autocommands
-function M._setup_autocmds()
-  local augroup = vim.api.nvim_create_augroup("Smith", { clear = true })
-
-  vim.api.nvim_create_autocmd("BufEnter", {
-    group = augroup,
-    callback = function()
-      -- Add your autocmd logic here
-    end,
-  })
 end
 
 ---@type table<number, table> Active viewers for history entries (history_index -> viewer state)

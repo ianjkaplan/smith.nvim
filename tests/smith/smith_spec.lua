@@ -14,18 +14,16 @@ describe("smith.nvim", function()
       smith.setup()
 
       assert.is_true(smith.config.enabled)
-      assert.is_false(smith.config.autocmds)
-      assert.is_false(smith.config.debug)
+      assert.is_true(smith.config.keymaps)
     end)
 
     it("should merge user config with defaults", function()
       smith.setup({
-        debug = true,
+        keymaps = false,
       })
 
       assert.is_true(smith.config.enabled)
-      assert.is_false(smith.config.autocmds)
-      assert.is_true(smith.config.debug)
+      assert.is_false(smith.config.keymaps)
     end)
 
     it("should create user command", function()
@@ -57,11 +55,11 @@ describe("smith.nvim", function()
 
   describe("get_config", function()
     it("should return current configuration", function()
-      smith.setup({ debug = true })
+      smith.setup({ keymaps = false })
 
       local cfg = smith.get_config()
 
-      assert.is_true(cfg.debug)
+      assert.is_false(cfg.keymaps)
       assert.is_true(cfg.enabled)
     end)
   end)
