@@ -35,12 +35,22 @@ M.jobs = {}
 ---@field on_stderr? fun(data: string[])
 ---@field on_exit? fun(job: SmithJob)
 
+-- Setup prompt to get the agent to edit quickly
+local prompt = [[
+Based on the following text make the relavent code
+reason through changes as needed but DO NOT summarize
+the changes. Once all the requested changes are made
+stop immediately.
+]]
+
 ---Dispatch a new job
 ---@param opts SmithJobOpts
 ---@return number|nil job_id
 function M.dispatch(opts)
   -- Build the text with context if provided
-  local text = opts.text
+  local text = prompt .. opts.text
+
+  -- TODO: add some additional prompting
   if opts.context then
     text = string.format(
       "%s\n\nContext from %s (lines %d-%d):\n```\n%s\n```",
@@ -206,6 +216,5 @@ function M.send(job_id, data)
   vim.fn.chansend(job_id, data)
   return true
 end
-
 
 return M
