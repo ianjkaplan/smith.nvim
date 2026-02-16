@@ -25,7 +25,8 @@ _"Mr. Anderson, please sit down."_
 ## Requirements
 
 - Neovim >= 0.10.0
-- `cursor-agent` CLI tool available in PATH
+- `codex` CLI tool available in PATH
+- Cursor Agent CLI (`agent`) available in PATH (optional, for `provider = "agent"`)
 
 ## Installation
 
@@ -49,7 +50,27 @@ opts = {
   keymaps = true,
   -- Prefix for all keymaps (e.g., <leader>mm, <leader>mc, etc.)
   keymap_prefix = "<leader>m",
+  -- Active provider: "codex" (default) or "agent"
+  provider = "codex",
 }
+```
+
+### Provider Selection
+
+Use Codex (default):
+
+```lua
+require("smith").setup({
+  provider = "codex",
+})
+```
+
+Switch to Cursor Agent:
+
+```lua
+require("smith").setup({
+  provider = "agent",
+})
 ```
 
 ## Usage

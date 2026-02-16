@@ -3,6 +3,7 @@
 local M = {}
 
 local indicators = require("smith.indicators")
+local providers = require("smith.providers")
 
 ---@class SmithJob
 ---@field id number
@@ -13,6 +14,7 @@ local indicators = require("smith.indicators")
 ---@field status "running"|"completed"|"failed"|"cancelled"
 ---@field exit_code number|nil
 ---@field context SmithContext|nil
+---@field provider SmithProviderName
 ---@field on_stdout fun(data: string[])|nil
 ---@field on_stderr fun(data: string[])|nil
 ---@field on_exit fun(job: SmithJob)|nil
@@ -28,6 +30,7 @@ M.jobs = {}
 
 ---@class SmithJobOpts
 ---@field text string
+---@field config ValidatedSmithConfig
 ---@field context? SmithContext
 ---@field cwd? string
 ---@field env? table<string, string>
@@ -35,48 +38,23 @@ M.jobs = {}
 ---@field on_stderr? fun(data: string[])
 ---@field on_exit? fun(job: SmithJob)
 
--- Setup prompt to get the agent to edit quickly
-local prompt = [[
-Based on the following text make the relavent code
-reason through changes as needed but DO NOT summarize
-the changes. Once all the requested changes are made
-stop immediately.
-]]
-
 ---Dispatch a new job
 ---@param opts SmithJobOpts
 ---@return number|nil job_id
 function M.dispatch(opts)
-  -- Build the text with context if provided
-  local text = prompt .. opts.text
-
-  -- TODO: add some additional prompting
-  if opts.context then
-    text = string.format(
-      "%s\n\nContext from %s (lines %d-%d):\n```\n%s\n```",
-      opts.text,
-      opts.context.location,
-      opts.context.start,
-      opts.context.finish,
-      opts.context.content
-    )
-  end
+  local provider, cmd = providers.build_cmd(opts.config, opts)
 
   ---@type SmithJob
   local job = {
     id = 0,
-    cmd = {
-      "agent",
-      "-p",
-      "--output-format=stream-json",
-      text,
-    },
+    cmd = cmd,
     index = vim.tbl_count(M.jobs) + 1,
     stdout = {},
     stderr = {},
     status = "running",
     exit_code = nil,
     context = opts.context,
+    provider = provider,
     on_stdout = opts.on_stdout,
     on_stderr = opts.on_stderr,
     on_exit = opts.on_exit,
@@ -116,7 +94,9 @@ function M.dispatch(opts)
     on_exit = function(_, exit_code)
       job.exit_code = exit_code
       job.status = exit_code == 0 and "completed" or "failed"
-      job.on_exit(job)
+      if job.on_exit then
+        job.on_exit(job)
+      end
     end,
     stdout_buffered = false,
     stderr_buffered = false,
@@ -140,7 +120,7 @@ function M.dispatch(opts)
 
   job.id = job_id
   M.jobs[job_id] = job
-  vim.notify(string.format("Smith #%d working", job.index), vim.log.levels.INFO)
+  vim.notify(string.format("Smith #%d working (%s)", job.index, job.provider), vim.log.levels.INFO)
 
   -- Show indicator if we have visual context
   if opts.context then

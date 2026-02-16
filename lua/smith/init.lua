@@ -1,5 +1,5 @@
 ---@class Smith
----@field config SmithConfig
+---@field config ValidatedSmithConfig
 local M = {}
 
 local ui = require("smith.ui")
@@ -8,13 +8,14 @@ local history = require("smith.history")
 local parser = require("smith.parser")
 local indicators = require("smith.indicators")
 
----@type SmithConfig
-M.config = require("smith.config").defaults
+---@type ValidatedSmithConfig
+M.config = vim.deepcopy(require("smith.config").defaults)
 
 ---Main setup funciton for smith.nvim with user configuration
 ---@param opts? SmithConfig
 function M.setup(opts)
-  M.config = vim.tbl_deep_extend("force", M.config, opts or {})
+  local merged = vim.tbl_deep_extend("force", M.config, opts or {})
+  M.config = require("smith.config").validate(merged)
 
   -- Skip setup if plugin is disabled
   if not M.config.enabled then
@@ -77,11 +78,12 @@ function M.run(input, context)
     M._last_input = value
 
     -- Add to history and get index
-    local history_index = history.add(value)
+    local history_index = history.add(value, M.config.provider)
 
     -- Dispatch the agent job with the input
     agent.dispatch({
       text = value,
+      config = M.config,
       context = context,
       on_stdout = function(data)
         history.append_output(history_index, data)
@@ -141,10 +143,11 @@ function M._update_viewer(history_index)
     local status_icon = entry.status == "completed" and "✓" or "✗"
 
     -- Re-parse all output into fresh state with updated header
-    local fresh_state = parser.create_stream_state()
+    local provider = entry.provider or "agent"
+    local fresh_state = parser.create_stream_state(provider)
     fresh_state.lines = format_query_box(entry.input, entry.status)
     for _, line in ipairs(entry.output) do
-      fresh_state = parser.parse_and_update(fresh_state, line)
+      fresh_state = parser.parse_and_update(fresh_state, line, provider)
     end
 
     -- Add footer
@@ -157,8 +160,9 @@ function M._update_viewer(history_index)
     M._active_viewers[history_index] = nil
   else
     -- Still running - incrementally parse new output
+    local provider = viewer.provider or entry.provider or "agent"
     for i = viewer.parsed_lines + 1, #entry.output do
-      viewer.stream_state = parser.parse_and_update(viewer.stream_state, entry.output[i])
+      viewer.stream_state = parser.parse_and_update(viewer.stream_state, entry.output[i], provider)
       viewer.parsed_lines = i
     end
 
@@ -178,15 +182,16 @@ end
 ---@param index number
 function M._open_history_viewer(entry, index)
   -- Reset parser for this entry
-  parser.reset()
+  local provider = entry.provider or "agent"
+  parser.reset(provider)
 
   -- Create stream state and parse existing output
-  local stream_state = parser.create_stream_state()
+  local stream_state = parser.create_stream_state(provider)
   stream_state.lines = format_query_box(entry.input, entry.status)
 
   -- Parse existing output
   for _, line in ipairs(entry.output) do
-    stream_state = parser.parse_and_update(stream_state, line)
+    stream_state = parser.parse_and_update(stream_state, line, provider)
   end
 
   -- Determine window title
@@ -223,12 +228,13 @@ function M._open_history_viewer(entry, index)
       streaming_win = streaming_win,
       stream_state = stream_state,
       parsed_lines = #entry.output,
+      provider = provider,
     }
   end
 end
 
 ---Get the current configuration
----@return SmithConfig
+---@return ValidatedSmithConfig
 function M.get_config()
   return M.config
 end

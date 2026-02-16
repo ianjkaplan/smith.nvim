@@ -33,8 +33,9 @@ Features:
 ==============================================================================
 2. REQUIREMENTS                                           *smith-requirements*
 
-  - Neovim >= 0.8.0
-  - `agent` CLI tool available in PATH (with `--output-format=stream-json`)
+  - Neovim >= 0.10.0
+  - `codex` CLI tool available in PATH
+  - `agent` CLI tool available in PATH (optional, for `provider = "agent"`)
 
 ==============================================================================
 3. INSTALLATION                                           *smith-installation*
@@ -62,26 +63,15 @@ Call the setup function with your preferred options:
 >lua
   require("smith").setup({
     enabled = true,           -- Enable the plugin
-    autocmds = false,         -- Enable autocommands
-    debug = false,            -- Enable debug mode
     keymaps = true,           -- Enable default keymaps
     keymap_prefix = "<leader>m", -- Prefix for keymaps
+    provider = "codex",       -- Active provider: "codex" or "agent"
   })
 <
                                                          *smith-config-enabled*
 enabled ~
     Type: `boolean`, Default: `true`
     Enable or disable the plugin.
-
-                                                        *smith-config-autocmds*
-autocmds ~
-    Type: `boolean`, Default: `false`
-    Enable autocommands (reserved for future use).
-
-                                                           *smith-config-debug*
-debug ~
-    Type: `boolean`, Default: `false`
-    Enable debug mode for troubleshooting.
 
                                                          *smith-config-keymaps*
 keymaps ~
@@ -92,6 +82,11 @@ keymaps ~
 keymap_prefix ~
     Type: `string`, Default: `"<leader>m"`
     Prefix for all default keymaps.
+
+                                                        *smith-config-provider*
+provider ~
+    Type: `"codex"|"agent"`, Default: `"codex"`
+    Active provider used when dispatching jobs.
 
 ==============================================================================
 5. COMMANDS                                                   *smith-commands*

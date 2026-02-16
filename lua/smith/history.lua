@@ -2,6 +2,7 @@
 ---@field input string
 ---@field output string[]
 ---@field status "running"|"completed"|"failed"|"cancelled"
+---@field provider SmithProviderName
 
 ---@class SmithHistory
 ---@field items SmithHistoryEntry[]
@@ -12,13 +13,15 @@ M.items = {}
 
 ---Add an item to history
 ---@param input string
+---@param provider SmithProviderName
 ---@return number index The index of the new entry
-function M.add(input)
+function M.add(input, provider)
   ---@type SmithHistoryEntry
   local entry = {
     input = input,
     output = {},
     status = "running",
+    provider = provider,
   }
   table.insert(M.items, entry)
   return #M.items

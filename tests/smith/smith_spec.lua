@@ -15,15 +15,18 @@ describe("smith.nvim", function()
 
       assert.is_true(smith.config.enabled)
       assert.is_true(smith.config.keymaps)
+      assert.are.equal("codex", smith.config.provider)
     end)
 
     it("should merge user config with defaults", function()
       smith.setup({
         keymaps = false,
+        provider = "agent",
       })
 
       assert.is_true(smith.config.enabled)
       assert.is_false(smith.config.keymaps)
+      assert.are.equal("agent", smith.config.provider)
     end)
 
     it("should create user command", function()
@@ -61,15 +64,17 @@ describe("smith.nvim", function()
 
       assert.is_false(cfg.keymaps)
       assert.is_true(cfg.enabled)
+      assert.are.equal("codex", cfg.provider)
     end)
   end)
 
   describe("config validation", function()
     it("should validate correct config", function()
-      local valid, err = config.validate(config.defaults)
+      local validated = config.validate(config.defaults)
 
-      assert.is_true(valid)
-      assert.is_nil(err)
+      assert.is_true(validated.enabled)
+      assert.is_true(validated.keymaps)
+      assert.are.equal("codex", validated.provider)
     end)
   end)
 end)
