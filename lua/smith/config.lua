@@ -10,7 +10,7 @@
 ---@field keymap_prefix string
 ---@field provider SmithProviderName
 ---
----@alias SmithProviderName "codex"|"agent"
+---@alias SmithProviderName "codex"|"agent"|"claude"
 local M = {}
 
 ---@type ValidatedSmithConfig
@@ -25,7 +25,7 @@ M.defaults = {
 ---@param config SmithConfig
 ---@return ValidatedSmithConfig
 function M.validate(config)
-  local providers = { "codex", "agent" }
+  local providers = { "codex", "agent", "claude" }
 
   vim.validate({
     enabled = { config.enabled, "boolean" },
@@ -36,7 +36,7 @@ function M.validate(config)
       function(value)
         return type(value) == "string" and vim.tbl_contains(providers, value)
       end,
-      "one of: codex, agent",
+      "one of: codex, agent, claude",
     },
   })
 

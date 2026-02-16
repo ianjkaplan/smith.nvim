@@ -37,6 +37,18 @@ describe("smith.providers", function()
     assert.are.equal("--output-format=stream-json", cmd[3])
   end)
 
+  it("should build claude command when provider is claude", function()
+    config.provider = "claude"
+
+    local provider, cmd = providers.build_cmd(config, { text = "test prompt" })
+
+    assert.are.equal("claude", provider)
+    assert.are.equal("claude", cmd[1])
+    assert.are.equal("-p", cmd[2])
+    assert.are.equal("--output-format=stream-json", cmd[3])
+    assert.are.equal("--verbose", cmd[4])
+  end)
+
   it("should append context details to prompt", function()
     local _, cmd = providers.build_cmd(config, {
       text = "refactor this",

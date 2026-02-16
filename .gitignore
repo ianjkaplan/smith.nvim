@@ -15,6 +15,7 @@ Thumbs.db
 
 # Test artifacts
 /tmp/
+output/
 *.orig
 
 # Dependencies (for local development)

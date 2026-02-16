@@ -27,6 +27,7 @@ _"Mr. Anderson, please sit down."_
 - Neovim >= 0.10.0
 - `codex` CLI tool available in PATH
 - Cursor Agent CLI (`agent`) available in PATH (optional, for `provider = "agent"`)
+- Claude Code CLI (`claude`) available in PATH (optional, for `provider = "claude"`)
 
 ## Installation
 
@@ -50,7 +51,7 @@ opts = {
   keymaps = true,
   -- Prefix for all keymaps (e.g., <leader>mm, <leader>mc, etc.)
   keymap_prefix = "<leader>m",
-  -- Active provider: "codex" (default) or "agent"
+  -- Active provider: "codex" (default), "agent", or "claude"
   provider = "codex",
 }
 ```
@@ -70,6 +71,14 @@ Switch to Cursor Agent:
 ```lua
 require("smith").setup({
   provider = "agent",
+})
+```
+
+Switch to Claude Code:
+
+```lua
+require("smith").setup({
+  provider = "claude",
 })
 ```
 
@@ -106,3 +115,7 @@ When using `<leader>mm` in visual mode, the selected text is automatically inclu
 - The selected text content
 - File path where the selection originated
 - Line numbers of the selection
+
+## License
+
+MIT. See [LICENSE](LICENSE) for details.

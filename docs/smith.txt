@@ -36,6 +36,7 @@ Features:
   - Neovim >= 0.10.0
   - `codex` CLI tool available in PATH
   - `agent` CLI tool available in PATH (optional, for `provider = "agent"`)
+  - `claude` CLI tool available in PATH (optional, for `provider = "claude"`)
 
 ==============================================================================
 3. INSTALLATION                                           *smith-installation*
@@ -65,7 +66,7 @@ Call the setup function with your preferred options:
     enabled = true,           -- Enable the plugin
     keymaps = true,           -- Enable default keymaps
     keymap_prefix = "<leader>m", -- Prefix for keymaps
-    provider = "codex",       -- Active provider: "codex" or "agent"
+    provider = "codex",       -- Active provider: "codex", "agent", or "claude"
   })
 <
                                                          *smith-config-enabled*
@@ -85,7 +86,7 @@ keymap_prefix ~
 
                                                         *smith-config-provider*
 provider ~
-    Type: `"codex"|"agent"`, Default: `"codex"`
+    Type: `"codex"|"agent"|"claude"`, Default: `"codex"`
     Active provider used when dispatching jobs.
 
 ==============================================================================

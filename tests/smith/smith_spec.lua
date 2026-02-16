@@ -29,6 +29,14 @@ describe("smith.nvim", function()
       assert.are.equal("agent", smith.config.provider)
     end)
 
+    it("should accept claude as a provider", function()
+      smith.setup({
+        provider = "claude",
+      })
+
+      assert.are.equal("claude", smith.config.provider)
+    end)
+
     it("should create user command", function()
       smith.setup()
 

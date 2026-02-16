@@ -3,11 +3,12 @@ local M = {}
 
 local parsers = {
   agent = require("smith.parsers.agent"),
+  claude = require("smith.parsers.claude"),
   codex = require("smith.parsers.codex"),
 }
 
----@alias SmithParseResult SmithAgentParseResult|SmithCodexParseResult
----@alias SmithStreamState SmithAgentStreamState|SmithCodexStreamState
+---@alias SmithParseResult SmithAgentParseResult|SmithClaudeParseResult|SmithCodexParseResult
+---@alias SmithStreamState SmithAgentStreamState|SmithClaudeStreamState|SmithCodexStreamState
 
 ---@param provider SmithProviderName|nil
 ---@return table

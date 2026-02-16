@@ -49,6 +49,10 @@ function M.get_active(config)
       cmd = "agent",
       args = { "-p", "--output-format=stream-json" },
     },
+    claude = {
+      cmd = "claude",
+      args = { "-p", "--output-format=stream-json", "--verbose" },
+    },
   }
 
   ---@type SmithProviderName
